@@ -3,18 +3,19 @@
 #include <string.h>
 #include <math.h>
 
-#define MEMORY_NUMBER_OF_WORDS 1024 // definido no exercicio
+#define MEMORY_SIZE 4096 // definido no exercicio
 #define CACHE_NUMBER_OF_BLOCKS 64 // 64 blocos que levam 4 palavras
 #define WORDS 4 // 4 palavras
 #define WORD_SIZE 32 // 32 bits
 
-int decToBinary(int n) 
+unsigned long int decToBinary(int n) 
 { 
+	printf("nzao: %d\n", n);
 	// binary
-	int k;
+	unsigned long int k = 0;
 
     // array to store binary number 
-    int binaryNum[32]; 
+    unsigned long int  binaryNum[32]; 
   
     // counter for binary array 
     int i = 0; 
@@ -30,27 +31,39 @@ int decToBinary(int n)
     for (int j = i - 1; j >= 0; j--) {
 		k = 10 * k + binaryNum[j];
 	}
-	// printf("%d\n", k);
 
+	printf("kzin: %lu\n", k);
 	return k;
 }
 
-// int tagCalculate(N) {
-
-// 	if (N > 111112){
-// 		return 0;
-// 	}
-// 	else {
-// 		return 1;
-// 	}
-// 	return 0;
+unsigned long int tagCalculate(unsigned long int binary) {
 	
-// }
+	unsigned long int rest;
+	unsigned long int tag_with_zeros;
+	unsigned long int tag_without_zeros;
+
+	if (binary < 111112){
+		return 0;
+	}
+	else {
+		printf("binary: %lu\n", binary);
+		rest = binary % 1000000;
+		printf("rest: %lu\n", rest);
+		tag_with_zeros = binary - rest;
+		printf("tag_with_zeros: %lu\n", tag_with_zeros);
+		tag_without_zeros = tag_with_zeros / 1000000;
+		printf("tag_without_zeros: %lu\n", tag_without_zeros);
+		return tag_without_zeros;
+	}
+
+	return 1;
+
+}
 
 int main(void) {
     
 	// memory
-	char memory_data[MEMORY_NUMBER_OF_WORDS][WORD_SIZE];
+	char memory_data[MEMORY_SIZE][WORD_SIZE];
 	
 	// cache
 	char cache_data[CACHE_NUMBER_OF_BLOCKS][WORDS][WORD_SIZE];
@@ -69,8 +82,8 @@ int main(void) {
 	int operation; // 0: leitura, 1: escrita
 	char data[WORD_SIZE]; // dado para escrita
 
-	int N_binary;
-	int tag;
+	unsigned long int N_binary;
+	unsigned long int tag;
 	int offset;
 	int block_adress;
 	int block_number;
@@ -78,34 +91,55 @@ int main(void) {
 
 	float reads; // quantidade de operations == 0
 	float writes; // quantidade de operations == 1
-	int hits = 1; // acesso ao cache com sucesso
+	int hits = 0; // acesso ao cache com sucesso
 	int misses = 0; // acesso ao cache sem sucesso
-	float hit_rate = 1.0; // = reads / hits
-	float miss_rate = 1.0; // =  reads / misses
+	float hit_rate = 0.0; // = reads / hits
+	float miss_rate = 0.0; // =  reads / misses
 
 	while(scanf("%d%d", &N, &operation) != EOF) { // entrada endereco de acesso e operacao
-			
+		
+		N_binary = decToBinary(N);
+		printf("N_binary: %lu\n", N_binary);
+
+		tag = tagCalculate(N_binary);
+		printf("tag: %lu\n", tag);
+
+		offset = N % 4; // encontrar offset
+		printf("offset: %d\n", offset);
+
+		block_adress = floor(N/16);
+		printf("block_adress: %d\n", block_adress);
+
+		block_number = block_adress % CACHE_NUMBER_OF_BLOCKS; // encontrar bloco da cache
+		printf("block_number: %d\n", block_number);
+
 		if (operation == 1) { // escrever na memoria
 			writes++; // aumenta quantidade de escritas
-			
+
 			// lendo dado e onde vou escrever na cache
 			scanf("%s", data); // entrada data
-
-			// tag = tagCalculate(N)
-			offset = N % 2; // encontrar offset
-			block_adress = floor(N/16);
-			block_number = block_adress % CACHE_NUMBER_OF_BLOCKS; // encontrar bloco da cache
-			// printf("%d\n", block_number);
-			index_binary = decToBinary(block_number);
-
+			
 			if (cache_validity[block_number] == 1) {
 				// temos algm com essa index
 				// verifica tag
 				if (cache_tag[block_number] != tag)	{
-					// se for diferente escrever na memoria esse dado
-					strcpy(memory_data[0], cache_data[block_number][offset]);
+
+					if (cache_dirty[block_number] == 1)
+					{
+						// se for diferente escrever na memoria esse dado
+						strcpy(memory_data[N], cache_data[block_number][offset]);
+						// atualiza cache com novo dado
+						strcpy(cache_data[block_number][offset], data);
+
+						printf("%d %d %s W\n\n", N, operation, data);
+
+					} else {
 					// atualiza cache com novo dado
 					strcpy(cache_data[block_number][offset], data);
+
+					printf("%d %d %s W\n\n", N, operation, data);
+
+					}
 				}
 				
 			}
@@ -113,51 +147,54 @@ int main(void) {
 				// nao temos alguem nesse local
 				// escrever na cache todos do bloco
 				strcpy(cache_data[block_number][offset], data);
+				// marcar tag
+				cache_tag[block_number] = tag;
 				// sujar a cache
 				cache_dirty[block_number] = 1;
 				// marcar valido como 1
 				cache_validity[block_number] = 1;
 
+				printf("%d %d %s W\n\n", N, operation, data);
 			}			
 			
 		} else if (operation == 0) { // ler da memoria
 			reads++; // aumenta quantidade de leituras
-
-			// tag = tagCalculate(N)
-			offset = N % 2; // encontrar offset
-			block_adress = floor(N/16);
-			block_number = block_adress % CACHE_NUMBER_OF_BLOCKS; // encontrar bloco da cache
 			
 			if (cache_validity[block_number] == 1) {
 				// temos algm com essa index
 				
 				// verifica tag
-				if (cache_tag[CACHE_NUMBER_OF_BLOCKS] == tag) {
+				if (cache_tag[block_number] == tag) {
 					// se for o mesmo hit++
 					hits++;
+
+					printf("hit hello %d %d H\n\n", N, operation);
 				} else {
 					// se for diferente miss++
 					misses++;
 					// le da memoria
-					
+
+					printf("miss hi %d %d M\n\n", N, operation);				
 				}
 			}
 			else {
+				printf("\nler bloco cache vazio\n\n%d %d M\n\n", N, operation);
 				misses++;
 			}
 					
 		} else {
-			printf("Operacao errada");
+			printf("operation: %d\n", operation);
+			printf("Operacao errada\n\n");
 		
 		}
 
 	};
 
-	printf("READS: %f\n", reads);
+	printf("\nREADS: %f\n", reads);
 	printf("WRITES: %f\n", writes);  
 	printf("HITS: %d\n", hits);  
 	printf("MISSES: %d\n", misses);  
-	printf("HIT RATE: %.2f\n", reads / hits);  
-	printf("MISS RATE: %.2f\n", reads / misses);
+	printf("HIT RATE: %.2f\n", hits / reads);  
+	printf("MISS RATE: %.2f\n", misses / reads);
 
 }
