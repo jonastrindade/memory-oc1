@@ -10,7 +10,6 @@
 
 unsigned long int decToBinary(int n) 
 { 
-	printf("nzao: %d\n", n);
 	// binary
 	unsigned long int k = 0;
 
@@ -32,7 +31,7 @@ unsigned long int decToBinary(int n)
 		k = 10 * k + binaryNum[j];
 	}
 
-	printf("kzin: %lu\n", k);
+	// printf("kzin: %lu\n", k);
 	return k;
 }
 
@@ -46,13 +45,17 @@ unsigned long int tagCalculate(unsigned long int binary) {
 		return 0;
 	}
 	else {
-		printf("binary: %lu\n", binary);
+		// printf("binary: %lu\n", binary);
+		
 		rest = binary % 1000000;
-		printf("rest: %lu\n", rest);
+		// printf("rest: %lu\n", rest);
+		
 		tag_with_zeros = binary - rest;
-		printf("tag_with_zeros: %lu\n", tag_with_zeros);
+		// printf("tag_with_zeros: %lu\n", tag_with_zeros);
+		
 		tag_without_zeros = tag_with_zeros / 1000000;
-		printf("tag_without_zeros: %lu\n", tag_without_zeros);
+		// printf("tag_without_zeros: %lu\n", tag_without_zeros);
+		
 		return tag_without_zeros;
 	}
 
@@ -68,6 +71,7 @@ int main(void) {
 	// cache
 	char cache_data[CACHE_NUMBER_OF_BLOCKS][WORDS][WORD_SIZE];
 	int cache_tag[CACHE_NUMBER_OF_BLOCKS];
+	int cache_index[CACHE_NUMBER_OF_BLOCKS];
 	int cache_validity[CACHE_NUMBER_OF_BLOCKS];
 	int cache_dirty[CACHE_NUMBER_OF_BLOCKS];
 
@@ -98,20 +102,22 @@ int main(void) {
 
 	while(scanf("%d%d", &N, &operation) != EOF) { // entrada endereco de acesso e operacao
 		
+		// printf("%d\n", N);
+
 		N_binary = decToBinary(N);
-		printf("N_binary: %lu\n", N_binary);
+		// printf("N_binary: %lu\n", N_binary);
 
 		tag = tagCalculate(N_binary);
-		printf("tag: %lu\n", tag);
+		// printf("tag: %lu\n", tag);
 
 		offset = N % 4; // encontrar offset
-		printf("offset: %d\n", offset);
+		// printf("offset: %d\n", offset);
 
 		block_adress = floor(N/16);
-		printf("block_adress: %d\n", block_adress);
+		// printf("block_adress: %d\n", block_adress);
 
 		block_number = block_adress % CACHE_NUMBER_OF_BLOCKS; // encontrar bloco da cache
-		printf("block_number: %d\n", block_number);
+		// printf("block_number: %d\n", block_number);
 
 		if (operation == 1) { // escrever na memoria
 			writes++; // aumenta quantidade de escritas
@@ -124,20 +130,36 @@ int main(void) {
 				// verifica tag
 				if (cache_tag[block_number] != tag)	{
 
-					if (cache_dirty[block_number] == 1)
-					{
+					if (cache_dirty[block_number] == 1) {
 						// se for diferente escrever na memoria esse dado
 						strcpy(memory_data[N], cache_data[block_number][offset]);
 						// atualiza cache com novo dado
 						strcpy(cache_data[block_number][offset], data);
 
-						printf("%d %d %s W\n\n", N, operation, data);
+						printf("%d %d %s W\n", N, operation, data);
 
 					} else {
-					// atualiza cache com novo dado
-					strcpy(cache_data[block_number][offset], data);
+						// atualiza cache com novo dado
+						strcpy(cache_data[block_number][offset], data);
 
-					printf("%d %d %s W\n\n", N, operation, data);
+						printf("%d %d %s W\n", N, operation, data);
+
+					}
+				}
+				else {
+					if (cache_dirty[block_number] == 1) {
+						// se for diferente escrever na memoria esse dado
+						strcpy(memory_data[N], cache_data[block_number][offset]);
+						// atualiza cache com novo dado
+						strcpy(cache_data[block_number][offset], data);
+
+						printf("%d %d %s W\n", N, operation, data);
+
+					} else {
+						// atualiza cache com novo dado
+						strcpy(cache_data[block_number][offset], data);
+
+						printf("%d %d %s W\n", N, operation, data);
 
 					}
 				}
@@ -154,7 +176,7 @@ int main(void) {
 				// marcar valido como 1
 				cache_validity[block_number] = 1;
 
-				printf("%d %d %s W\n\n", N, operation, data);
+				printf("%d %d %s W\n", N, operation, data);
 			}			
 			
 		} else if (operation == 0) { // ler da memoria
@@ -168,22 +190,21 @@ int main(void) {
 					// se for o mesmo hit++
 					hits++;
 
-					printf("hit hello %d %d H\n\n", N, operation);
+					printf("%d %d H\n", N, operation);
 				} else {
 					// se for diferente miss++
 					misses++;
 					// le da memoria
 
-					printf("miss hi %d %d M\n\n", N, operation);				
+					printf("%d %d M\n", N, operation);				
 				}
 			}
 			else {
-				printf("\nler bloco cache vazio\n\n%d %d M\n\n", N, operation);
+				printf("%d %d M\n", N, operation);
 				misses++;
 			}
 					
 		} else {
-			printf("operation: %d\n", operation);
 			printf("Operacao errada\n\n");
 		
 		}
